@@ -1,0 +1,835 @@
+<?php
+session_start();
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: bookings_details.php");
+    exit();
+}
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$sql = "SELECT * FROM court";
+$result = $conn->query($sql);
+
+$court_bookings = array();
+if ($result && $result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $court_bookings[] = $row;
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court Bookings</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Court Bookings</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Duration</th>
+            <th>Date</th>
+            <th>Status</th>
+        </tr>
+        <?php foreach ($court_bookings as $booking): ?>
+        <tr>
+            <td><?php echo $booking['name']; ?></td>
+            <td><?php echo $booking['duration']; ?></td>
+            <td><?php echo $booking['date']; ?></td>
+            <td><?php echo $booking['status']; ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+    <br>
+    <a href="admin_dashboard.php">Back</a>
+</body>
+</html>
+
+
+<?php
+session_start();
+
+if(isset($_SESSION['user_id'])) {
+    if($_SESSION['email'] == 'admin@gmail.com') {
+        header("Location: admin_dashboard.php");
+        exit();
+    } else {
+        header("Location: user_dashboard.php");
+        exit();
+    }
+}
+
+if(isset($_POST['logout'])) {
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-image: url('C:\cover.jpg');
+        background-size: cover;
+        background-repeat: no-repeat;
+        margin: 0;
+        padding: 0;
+    }
+    .sidebar {
+        height: 100%;
+        width: 250px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        padding-top: 20px;
+    }
+    .sidebar a {
+        padding: 10px;
+        text-decoration: none;
+        display: block;
+        color: white;
+    }
+    .sidebar a:hover {
+        background-color: rgba(255, 255, 255, 0.1); 
+    }
+    .content {
+        margin-left: 250px;
+        padding: 20px;
+    }
+    .logout {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <a href="admin_dashboard.php">Dashboard</a>
+    <a href="user_details.php">User Details</a>
+    <a href="booking_details.php">Booking Details</a>
+
+    <form method="post" class="logout">
+        <input type="submit" name="logout" value="Logout">
+    </form>
+</div>
+
+<div class="content">
+    <center><h1>Welcome to the Badminton Court Portal Admin</h1></center>
+   
+</div>
+
+</body>
+</html>
+
+
+<?php
+session_start();
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: see_court.php");
+    exit();
+}
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+$sql_bookings = "SELECT bookings.*, court.name AS court_name, court.duration, court.date, court.status, users.name 
+                FROM bookings 
+                INNER JOIN users ON bookings.user_id = users.id 
+                INNER JOIN court ON bookings.court_id = court.id";
+$result_bookings = $conn->query($sql_bookings);
+
+$bookings = array();
+if ($result_bookings && $result_bookings->num_rows > 0) {
+    while ($row = $result_bookings->fetch_assoc()) {
+        $bookings[] = $row;
+    }
+}
+$sql_court = "SELECT * FROM court";
+$result_court = $conn->query($sql_court);
+
+$courts = array();
+if ($result_court && $result_court->num_rows > 0) {
+    while ($row = $result_court->fetch_assoc()) {
+        $courts[] = $row;
+    }
+}
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+   
+
+
+    <table><?php
+session_start();
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database, 3306);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$create_table_sql = "CREATE TABLE IF NOT EXISTS deleted_courts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    court_name VARCHAR(255) NOT NULL,
+    deletion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+if ($conn->query($create_table_sql) === FALSE) {
+    echo "Error creating table: " . $conn->error;
+}
+
+function fetchCourts($conn) {
+    $courts = array();
+    $sql = "SELECT * FROM court";
+    $result = $conn->query($sql);
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $courts[] = $row;
+        }
+    }
+    return $courts;
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['update_court'])) {
+        $court_name = $_POST['court_name'];
+        $name = $_POST['name'];
+        $duration = $_POST['duration'];
+        $date = $_POST['date'];
+
+        $update_sql = "UPDATE court SET name = ?, duration = ?, date = ? WHERE name = ?";
+        $stmt = $conn->prepare($update_sql);
+
+        if (!$stmt) {
+            echo "Error preparing statement: " . $conn->error;
+        } else {
+            $stmt->bind_param("ssss", $name, $duration, $date, $court_name);
+            if ($stmt->execute()) {
+                echo "Court updated successfully";
+            } else {
+                echo "Error updating court: " . $stmt->error;
+            }
+            $stmt->close();
+        }
+    } elseif (isset($_POST['delete_court'])) {
+        $court_name = $_POST['court_name'];
+        $delete_sql = "DELETE FROM court WHERE name = ?";
+        $stmt = $conn->prepare($delete_sql);
+
+        if (!$stmt) {
+            echo "Error preparing statement: " . $conn->error;
+        } else {
+            $stmt->bind_param("s", $court_name);
+            if ($stmt->execute()) {
+                $log_sql = "INSERT INTO deleted_courts (court_name) VALUES (?)";
+                $log_stmt = $conn->prepare($log_sql);
+                if (!$log_stmt) {
+                    echo "Error preparing log statement: " . $conn->error;
+                } else {
+                    $log_stmt->bind_param("s", $court_name);
+                    if ($log_stmt->execute()) {
+                        echo "Court deleted successfully";
+                    } else {
+                        echo "Error logging deleted court: " . $log_stmt->error;
+                    }
+                    $log_stmt->close();
+                }
+            } else {
+                echo "Error deleting court: " . $stmt->error;
+            }
+            $stmt->close();
+        }
+    } elseif (isset($_POST['date'])) {
+        $submitted_date = $_POST['date'];
+        $today = date('Y-m-d');
+        if ($submitted_date < $today) {
+            echo "Error: Date must be today or in the future.";
+        } else {
+        }
+    }
+}
+
+$courts = fetchCourts($conn);
+
+$conn->close();
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Court Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        form {
+            margin: 0;
+            padding: 0;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="submit"] {
+            padding: 6px;
+            margin: 4px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .action-column input[type="submit"] {
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Court Details</h2>
+  
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Duration</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+        <?php foreach ($courts as $court): ?>
+            <tr>
+                <form method="post">
+                    <td><input type="text" name="name" value="<?php echo $court['name']; ?>"></td>
+                    <td><input type="number" name="duration" value="<?php echo $court['duration']; ?>"></td>
+                    <td><input type="date" name="date" value="<?php echo $court['date']; ?>" min="<?php echo date('Y-m-d'); ?>"></td>
+                    <td class="action-column">
+                        <input type="hidden" name="court_name" value="<?php echo $court['name']; ?>">
+                        <input type="submit" name="update_court" value="Update">
+                        <input type="submit" name="delete_court" value="Delete" onclick="return confirm('Are you sure you want to delete this court?');">
+                    </td>
+                </form>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+
+    <a href="admin_dashboard.php">Back to Admin Dashboard</a>
+    <a href="del_records.php">View Deleted Court Records</a>
+</body>
+</html>
+
+
+<?php
+session_start();
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+if (isset($_SESSION['user_id'])) {
+    header("Location: Book_details.php");
+    exit();
+}
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $name = isset($_POST["name"]) ? htmlspecialchars($_POST["name"]) : "";
+    $duration = isset($_POST["duration"]) ? htmlspecialchars($_POST["duration"]) : "";
+    $date = isset($_POST["date"]) ? htmlspecialchars($_POST["date"]) : "";
+    $status = "Booked";
+
+    if (!empty($name) && !empty($duration) && !empty($date)) {
+        if (preg_match("/^\d{2}-\d{2}-\d{4}$/", $date)) {
+            $entered_date = strtotime(str_replace('-', '/', $date));
+            $today = strtotime(date('Y-m-d'));
+
+            if ($entered_date >= $today) {
+                $formatted_date = date('Y-m-d', $entered_date);
+
+                $insert_sql = "INSERT INTO court (name, duration, date, status) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($insert_sql);
+                $stmt->bind_param("ssss", $name, $duration, $formatted_date, $status);
+
+                if ($stmt->execute()) {
+                    echo "Booking successful";
+                    header("Location: user_dashboard.php");
+                    exit();
+                } else {
+                    echo "Error: " . $stmt->error;
+                }
+            } else {
+                echo "Invalid date.";
+            }
+        } else {
+            echo "Invalid date format. Please use dd-mm-yyyy.";
+        }
+    } else {
+        echo "Please enter both name, duration, and date.";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Court</title>
+</head>
+<body>
+    <h1>Book Court</h1>
+    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+        <label for="duration">Duration:</label>
+        <input type="text" id="duration" name="duration"><br><br>
+        <label for="date">Date (dd-mm-yyyy):</label>
+        <input type="text" id="date" name="date" placeholder="dd-mm-yyyy"><br><br>
+        <input type="submit" value="Book">
+        <a href="user_dashboard.php">Back to User Dashboard</a>
+    </form>
+</body>
+</html>
+<?php
+session_start();
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database, 3306);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+function fetchDeletedCourts($conn) {
+    $deleted_courts = array();
+    $sql = "SELECT * FROM deleted_courts";
+    $result = $conn->query($sql);
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $deleted_courts[] = $row;
+        }
+    }
+    return $deleted_courts;
+}
+
+$deletedCourts = fetchDeletedCourts($conn);
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deleted Court Records</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Deleted Court Records</h2>
+  
+    <table>
+        <tr>
+             
+            <th>ID</th>
+            <th>Court Name</th>
+            <th>Deletion Date</th>
+        </tr>
+        <?php foreach ($deletedCourts as $deletedCourt): ?>
+            <tr>
+                <td><?php echo $deletedCourt['id']; ?></td>
+                <td><?php echo $deletedCourt['court_name']; ?></td>
+                <td><?php echo $deletedCourt['deletion_date']; ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+
+    <a href="admin_dashboard.php">Back to Admin Dashboard</a><nav></nav><nav></nav>
+    <a href="booking_details.php">Back to Booking Details</a>
+</body>
+</html>
+
+
+<?php
+session_start();
+
+if(isset($_SESSION['user_id'])) {
+    header("Location: user_details.php");
+    exit();
+}
+
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+
+$conn = new mysqli($servername, $username, $password, $database, 3306);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$sql = "SELECT * FROM users";
+$result = $conn->query($sql);
+
+$users = array();
+if ($result && $result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $users[] = $row;
+    }
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST['update'])) {
+        $name = $_POST['name'];
+        $email = $_POST['email'];
+        $new_email = $_POST['new_email'];
+
+        $update_sql = "UPDATE users SET name='$name', email='$new_email' WHERE email='$email'";
+        $conn->query($update_sql);
+
+        header("Location: user_details.php");
+        exit();
+    } elseif (isset($_POST['delete'])) {
+        $email = $_POST['email'];
+
+        $delete_sql = "DELETE FROM users WHERE email='$email'";
+        $conn->query($delete_sql);
+
+        header("Location: user_details.php");
+        exit();
+    }
+}
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Details</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    .button-container {
+        margin-top: 20px;
+    }
+    .button-container button {
+        margin-right: 10px;
+    }
+    .hidden {
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<h2>User Details</h2>
+
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Action</th>
+    </tr>
+    <?php foreach ($users as $user): ?>
+    <tr>
+        <form method="post">
+            <td>
+                <span class="display-field"><?php echo $user['name']; ?></span>
+                <input type="text" name="name" value="<?php echo $user['name']; ?>" class="edit-field hidden">
+            </td>
+            <td>
+                <span class="display-field"><?php echo $user['email']; ?></span>
+                <input type="hidden" name="email" value="<?php echo $user['email']; ?>">
+                <input type="text" name="new_email" value="<?php echo $user['email']; ?>" class="edit-field hidden">
+            </td>
+            <td>    
+                <button type="button" class="edit-btn">Edit</button>
+                <input type="submit" name="update" value="Update" class="update-btn hidden">
+                <input type="submit" name="delete" value="Delete" onclick="return confirm('Are you sure you want to delete this user?');">
+            </td>
+        </form>
+    </tr>
+    <?php endforeach; ?>
+</table>
+
+<button onclick="window.location.href = 'admin_dashboard.php';">Back</button>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var editButtons = document.querySelectorAll('.edit-btn');
+    editButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var row = button.closest('tr');
+            var displayFields = row.querySelectorAll('.display-field');
+            var editFields = row.querySelectorAll('.edit-field');
+            var updateButton = row.querySelector('.update-btn');
+
+            displayFields.forEach(function(field) {
+                field.classList.add('hidden');
+            });
+
+            editFields.forEach(function(field) {
+                field.classList.remove('hidden');
+            });
+
+            button.classList.add('hidden');
+            updateButton.classList.remove('hidden');
+        });
+    });
+});
+</script>
+
+</body>
+</html>
+
+
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");s
+    exit();
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    header("Location: court_updated.php");
+    exit();
+}
+
+$court_id = $_GET['id']; 
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "mini";
+$conn = new mysqli($servername, $username, $password, $database);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$sql_court_details = "SELECT * FROM court WHERE id = $court_id";
+$result_court_details = $conn->query($sql_court_details);
+
+if ($result_court_details && $result_court_details->num_rows > 0) {
+    $court = $result_court_details->fetch_assoc();
+} else {
+    // Court not found, handle this case as needed
+    echo "Court not found.";
+}
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Court</title>
+    <style>
+        /* Add your CSS styles here */
+    </style>
+</head>
+<body>
+    <h2>Update Court</h2>
+    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+        <!-- Add your form fields here -->
+        <input type="hidden" name="court_id" value="<?php echo $court['id']; ?>">
+        <input type="submit" value="Update">
+    </form>
+    <a href="admin_dashboard.php">Back</a>
+</body>
+</html>
+
+        <tr>
+            <th>Name</th>
+            <th>Duration</th>
+            <th>Date</th>
+            <th>Status</th>
+        </tr>
+        <?php foreach ($courts as $court): ?>
+        <tr>
+            <td><?php echo $court['name']; ?></td>
+            <td><?php echo $court['duration']; ?></td>
+            <td><?php echo $court['date']; ?></td>
+            <td><?php echo $court['status']; ?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+
+    <a href="user_dashboard.php">Back to User Dashboard</a>
+</body>
+</html>
+
+
