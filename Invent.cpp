@@ -1,148 +1,132 @@
-#include <iostream>
-#include <vector>
-#include <iomanip>
-#include <limits> 
-using namespace std;
+import json
+import os
 
-class Product {
-public:
-    string name;
-    int id;
-    double price;
-    int quantity;
 
-    Product(const string& _name, int _id, double _price, int _quantity)
-        : name(_name), id(_id), price(_price), quantity(_quantity) {}
+class Product:
+    def __init__(self, name, product_id, price, quantity):
+        self.name = name
+        self.id = product_id
+        self.price = price
+        self.quantity = quantity
 
-    void display() const {
-        cout << setw(5) << id << setw(20) << name << setw(10) << price << setw(8) << quantity << endl;
-    }
-};
+    def display(self):
+        print(f"{self.id:<5}{self.name:<20}{self.price:<10}{self.quantity:<8}")
 
-class InventoryManager {
-private:
-    vector<Product> products;
-
-public:
-    void addProduct(const Product& product) {
-        products.push_back(product);
-    }
-
-    void addProductManually() {
-        string name;
-        double price;
-        int quantity;
-
-        cout << "Enter product name: ";
-        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
-        getline(cin, name);
-
-        cout << "Enter product price: ";
-        cin >> price;
-
-        cout << "Enter product quantity: ";
-        cin >> quantity;
-
-        int nextId = products.empty() ? 1 : (products.back().id + 1);
-
-        Product newProduct(name, nextId, price, quantity);
-        addProduct(newProduct);
-
-        cout << "Product added successfully!\n";
-    }
-
-    void displayInventory() const {
-        cout << setw(5) << "ID" << setw(20) << "Name" << setw(10) << "Price" << setw(8) << "Quantity" << endl;
-        cout << "-----------------------------------------\n";
-        for (const Product& product : products) {
-            product.display();
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "id": self.id,
+            "price": self.price,
+            "quantity": self.quantity
         }
-    }
 
-    void updateQuantity(int productId, int newQuantity) {
-        for (Product& product : products) {
-            if (product.id == productId) {
-                product.quantity = newQuantity;
-                cout << "Quantity updated successfully!\n";
-                return;
-            }
-        }
-        cout << "Product not found.\n";
-    }
+    @staticmethod
+    def from_dict(data):
+        return Product(data["name"], data["id"], data["price"], data["quantity"])
 
-    void sellProduct(int productId, int quantitySold) {
-        for (Product& product : products) {
-            if (product.id == productId) {
-                if (product.quantity >= quantitySold) {
-                    product.quantity -= quantitySold;
-                    cout << "Sale successful!\n";
-                } else {
-                    cout << "Insufficient stock for the sale.\n";
-                }
-                return;
-            }
-        }
-        cout << "Product not found.\n";
-    }
-};
 
-int main() {
-    InventoryManager inventory;
+class InventoryManager:
+    def __init__(self, filename="inventory.json"):
+        self.filename = filename
+        self.products = []
+        self.load_inventory()
 
-    inventory.addProduct(Product("Laptop", 1, 75000, 30));
-    inventory.addProduct(Product("Printer", 2, 10000, 30));
-    inventory.addProduct(Product("Mouse", 3, 4000, 30));
+    def load_inventory(self):
+        if os.path.exists(self.filename):
+            with open(self.filename, "r") as f:
+                data = json.load(f)
+                self.products = [Product.from_dict(p) for p in data]
+        else:
+            self.products = []
 
-    int choice;
-    do {
-        cout << "1. Display Inventory\n";
-        cout << "2. Update Quantity\n";
-        cout << "3. Sell Product\n";
-        cout << "4. Add Product \n";
-        cout << "5. Exit\n";
-        cout << "Enter your choice: ";
-        cin >> choice;
+    def save_inventory(self):
+        with open(self.filename, "w") as f:
+            json.dump([p.to_dict() for p in self.products], f, indent=4)
 
-        switch (choice) {
-            case 1:
-                // Display Inventory
-                inventory.displayInventory();
-                break;
+    def add_product(self, product):
+        self.products.append(product)
+        self.save_inventory()
 
-            case 2:
-                // Update Quantity
-                int productId, newQuantity;
-                cout << "Enter product ID: ";
-                cin >> productId;
-                cout << "Enter new quantity: ";
-                cin >> newQuantity;
-                inventory.updateQuantity(productId, newQuantity);
-                break;
+    def add_product_manually(self):
+        name = input("Enter product name: ").strip()
+        price = float(input("Enter product price: "))
+        quantity = int(input("Enter product quantity: "))
 
-            case 3:
-                // Sell Product
-                int sellProductId, sellQuantity;
-                cout << "Enter product ID to sell: ";
-                cin >> sellProductId;
-                cout << "Enter quantity to sell: ";
-                cin >> sellQuantity;
-                inventory.sellProduct(sellProductId, sellQuantity);
-                break;
+        next_id = 1 if not self.products else self.products[-1].id + 1
+        new_product = Product(name, next_id, price, quantity)
+        self.add_product(new_product)
 
-            case 4:
-                // Add Product
-                inventory.addProductManually();
-                break;
+        print("Product added successfully!")
 
-            case 5:
-                // Exit
-                cout << "Exiting program. Thank You!\n";
-                break;
+    def display_inventory(self):
+        print(f"{'ID':<5}{'Name':<20}{'Price':<10}{'Quantity':<8}")
+        print("-" * 50)
+        for product in self.products:
+            product.display()
 
-            default:
-                cout << "Invalid choice. Please enter a valid option.\n";
-        }
-    } while (choice != 5);
+    def update_quantity(self, product_id, new_quantity):
+        for product in self.products:
+            if product.id == product_id:
+                product.quantity = new_quantity
+                self.save_inventory()
+                print("Quantity updated successfully!")
+                return
+        print("Product not found.")
 
-    return 0;
-}
+    def sell_product(self, product_id, quantity_sold):
+        for product in self.products:
+            if product.id == product_id:
+                if product.quantity >= quantity_sold:
+                    product.quantity -= quantity_sold
+                    self.save_inventory()
+                    print("Sale successful!")
+                else:
+                    print("Insufficient stock for the sale.")
+                return
+        print("Product not found.")
+
+
+def main():
+    inventory = InventoryManager()
+
+    # Add default products only if inventory is empty
+    if not inventory.products:
+        inventory.add_product(Product("Laptop", 1, 75000, 30))
+        inventory.add_product(Product("Printer", 2, 10000, 30))
+        inventory.add_product(Product("Mouse", 3, 4000, 30))
+
+    while True:
+        print("\n1. Display Inventory")
+        print("2. Update Quantity")
+        print("3. Sell Product")
+        print("4. Add Product")
+        print("5. Exit")
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            inventory.display_inventory()
+        elif choice == "2":
+            try:
+                product_id = int(input("Enter product ID: "))
+                new_quantity = int(input("Enter new quantity: "))
+                inventory.update_quantity(product_id, new_quantity)
+            except ValueError:
+                print("Invalid input. Please enter numbers.")
+        elif choice == "3":
+            try:
+                sell_product_id = int(input("Enter product ID to sell: "))
+                sell_quantity = int(input("Enter quantity to sell: "))
+                inventory.sell_product(sell_product_id, sell_quantity)
+            except ValueError:
+                print("Invalid input. Please enter numbers.")
+        elif choice == "4":
+            inventory.add_product_manually()
+        elif choice == "5":
+            print("Exiting program. Thank You!")
+            break
+        else:
+            print("Invalid choice. Please enter a valid option.")
+
+
+if __name__ == "__main__":
+    main()
