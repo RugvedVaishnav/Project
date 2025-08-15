@@ -1,7 +1,6 @@
 import json
 import os
 
-
 class Product:
     def __init__(self, name, product_id, price, quantity):
         self.name = name
